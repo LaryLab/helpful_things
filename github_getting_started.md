@@ -78,10 +78,10 @@
   
   
     
-If you need to merge repositories from old GitHub accounts: https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository   
+If you need to merge repositories from old GitHub accounts: [https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository]   
 
-If you want a rundown of the benefits of keeping things in R projects: https://r4ds.had.co.nz/workflow-projects.html#workflow-projects   
+If you want a rundown of the benefits of keeping things in R projects: [https://r4ds.had.co.nz/workflow-projects.html#workflow-projects]   
 
-If you want to use renv to save the settings you use for a project and share them with other people: https://rstudio.github.io/renv/articles/renv.html#getting-started   
+If you want to use renv to save the settings you use for a project and share them with other people: [https://rstudio.github.io/renv/articles/renv.html#getting-started]   
 
-If you want a general overview of git/GitHub and some tutorials with well explained processes: https://happygitwithr.com/   
+If you want a general overview of git/GitHub and some tutorials with well explained processes: [https://happygitwithr.com/]   
