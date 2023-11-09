@@ -25,7 +25,8 @@
   1.	In “Note” give the token a name (that makes sense)  
   1.	For “Expiration” select “Custom”, then enter a date a year from now (you’ll have to make a new one then, but it helps to keep things more secure)  
   1.	Under “Select scopes” select: repo, write:packages, delete:packages, and project  
-  1.	
+  1.    Save this somewhere secure - we will need it later and this is the only time you will get to see it  
+  
 ### Start a new project on RStudio  
   1.	File > New Project > Version Control > Git  
   1.	It will ask you for the repository URL – this is the address you copied in step 1  
@@ -36,18 +37,18 @@
   1.	Now (hopefully?) you will have a little green and red “Git” that is sideways at the top of the screen under the toolbar, and a “Git” tab over to the right on the toolbar with the “Environment” tab  
   1.	Let’s edit something to see how it works – we’ll create a script file  
   1.	Open a new script file and save it as something – doesn’t matter what  
-    4.	Type a line in there and save it  
+    1.	Type a line in there and save it  
   1.	Click on EITHER of the “Git” tabs – if the colorful one, click the “Commit” option, if the tab on the right side, just click that tab  
   1.	There will be boxes on the side of the file names, select all of these and click “Commit”  
   1.	If it hasn’t already, a new window will pop up that is a more extended version of the same commands, and there is a space on the right side to write a commit message – write one (doesn’t have to be long) and click “Commit”  
   1.	You *might* get a message (in a new popup window) that says that it doesn’t know who you are (this has not been consistent for me), and in that case go back to the terminal and enter two commands: `git config --global user.email "jennifer.l.spillane@gmail.com"` and `git config --global user.name "Jennifer Spillane"`, then try to commit again  
   1.	If the files disappear from the window, it’s a good sign, and we can click the “Push” button to send these changes to GitHub  
   1.	Go back to GitHub and refresh the repo page and you should see the files there!  
-
-
-
+  
+  
+  
 ## Some alternate paths for a similar destination:  
-
+  
 ### Create a project from an existing directory  
   1.	File > New Project > Existing Directory  
   1.	Type in or select the working directory you want to make into a project  
@@ -67,15 +68,16 @@
   1.	Another window will pop up telling you what just happened, click “Close”  
   1.	Go to GitHub and create a new repository, just like above but with these changes:  
   1.	Name it the same thing that you names the RProject that you made  
-    4.	DO NOT check the “Initialize this repository with a README”  
-    7.	Create the repo   
+    1.	**DO NOT** check the “Initialize this repository with a README”  
+    2.	Create the repo   
   1.	There should be different sections with lines of code in them, we are interested in the code under “…or push an existing repository from the command line” – copy the first line of this code (should be three lines)  
   1.	Go back to RStudio and click on the “Terminal” tab and paste the command there and execute it. Do this for all three lines of code. (It’s probably okay to do this for all three at once, but I haven’t tested this, and doing them one at a time gives us time to address any errors)  
   1.	Now if you go back to GitHub (and refresh the page) you should see the .Rproj and .gitignore files that have been pushed to GitHub from the local repo  
   1.	Let’s add a README file to the repository. We can add it in either place, but let’s add it in GitHub so that we can pull it into our local repo from RStudio. There should be a green “Add a README” button to click in your repo on GitHub  
   1.	Write something super short here (normal markdown syntax applies) and then click the “Commit new file” button  
-
-
+  
+  
+    
 If you need to merge repositories from old GitHub accounts: https://docs.github.com/en/repositories/creating-and-managing-repositories/transferring-a-repository   
 
 If you want a rundown of the benefits of keeping things in R projects: https://r4ds.had.co.nz/workflow-projects.html#workflow-projects   
