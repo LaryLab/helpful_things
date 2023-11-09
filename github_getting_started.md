@@ -1,6 +1,6 @@
 # GitHub from RStudio  
 
-1.	Create a GitHub repo (using the GitHub website)  
+### Create a GitHub repo (using the GitHub website)  
   1.	Click on the picture that represents your profile (in the top right corner of GitHub)  
   1.	Click “Your organizations”  
   1.	Click “LaryLab”  
@@ -14,7 +14,7 @@
   1.	Write something in the README file – just a short line about what is contained in this repo (normal markdown rules apply)  
   1.	Now when you click on this repo, you’ll see a big green button on the right side that says “<> Code” that you can click  
   1.	The first option under “Clone” is for HTTPS – this is what we want – click the button over on the right side that looks like two overlapping sheets of paper to copy the URL   
-2.	Create a personal access token (classic)  
+### Create a personal access token (classic)  
   1.	Click on the picture that represents your profile (in the top right corner of GitHub)  
   1.	Click “Settings”  
   1.	On the left side, click “Developer settings”  
@@ -26,7 +26,7 @@
   1.	For “Expiration” select “Custom”, then enter a date a year from now (you’ll have to make a new one then, but it helps to keep things more secure)  
   1.	Under “Select scopes” select: repo, write:packages, delete:packages, and project  
   1.	
-3.	Start a new project on RStudio  
+### Start a new project on RStudio  
   1.	File > New Project > Version Control > Git  
   1.	It will ask you for the repository URL – this is the address you copied in step 1  
   1.	It will ask for a Project directory name – it’s easiest to make this the same name as the repo  
@@ -48,14 +48,14 @@
 
 ## Some alternate paths for a similar destination:  
 
-4.	Create a project from an existing directory  
+### Create a project from an existing directory  
   1.	File > New Project > Existing Directory  
   1.	Type in or select the working directory you want to make into a project  
   1.	Tools > Project Options > Git/SVN  
   1.	Version control system: Git  
   1.	Window will pop up asking if you want to initialize a new git repository for this project > Yes  
   1.	You will need to restart RStudio so that the change will take effect > Yes  
-5.	Create a new project in RStudio and link it to a new repo in GitHub  
+### Create a new project in RStudio and link it to a new repo in GitHub  
   1.	File > New Project > New Directory  
   1.	Click “New Project”  
   1.	Give it a name, check/select the location, and check “Create a git repository” (I also check “Use renv with this project”)  
