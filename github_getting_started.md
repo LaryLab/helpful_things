@@ -41,7 +41,7 @@
   1.	Click on EITHER of the “Git” tabs – if the colorful one, click the “Commit” option, if the tab on the right side, just click that tab  
   1.	There will be boxes on the side of the file names, select all of these and click “Commit”  
   1.	If it hasn’t already, a new window will pop up that is a more extended version of the same commands, and there is a space on the right side to write a commit message – write one (doesn’t have to be long) and click “Commit”  
-  1.	You *might* get a message (in a new popup window) that says that it doesn’t know who you are (this has not been consistent for me), and in that case go back to the terminal and enter two commands: `git config --global user.email "jennifer.l.spillane@gmail.com"` and `git config --global user.name "Jennifer Spillane"`, then try to commit again  
+  1.	You *might* get a message (in a new popup window) that says that it doesn’t know who you are (this has not been consistent for me), and in that case go back to the terminal and enter two commands: `git config --global user.email "your.email@gmail.com"` and `git config --global user.name "Jennifer Spillane"`, then try to commit again  
   1.	If the files disappear from the window, it’s a good sign, and we can click the “Push” button to send these changes to GitHub  
   1.	Go back to GitHub and refresh the repo page and you should see the files there!  
   
