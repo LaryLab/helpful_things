@@ -1,0 +1,301 @@
+---
+#Set up YAML
+title: "Code Like Carmen"
+author: "Anya Cutler"
+  #this will print the current date every time you knit the document
+date: "Last Updated `r format(Sys.Date(), '%B %d, %Y')`"
+
+output: 
+  html_document:
+      #the toc statements will print a table of contents with each header and subheader listed
+      #toc_float creates a floating table of contents
+      toc: TRUE
+      toc_float: TRUE
+      #the code folding statement collapses the code in the html so it is only viewable when the "code" button is clicked. ideal for sharing with a range of collaborators who may or may not be interested in the code behind the output. 
+      code_folding: hide
+---
+
+## Introduction  
+
+This guide serves as a template for organizing an analysis in R, using best practices for reproducibility and reporting. It will walk through example functions to use for cleaning, summarizing, and visualizing data. Below are key concepts that will be repeated throughout:  
+
+* The document is organized by analytic questions. Each question has its own R Markdown Header, with a description below the header of how the question will be answered. The code that creates each output (e.g. table, plot, etc) to answer the question is contained within its own code chunk. The key results for each analytic question are summarized below the output.  
+  + Write the description of each analysis in a way that can be copied directly into a methods section of a manuscript  
+  + Summarize the results of each analysis in a way that can be copied directly into a results section of a manuscript  
+  + A different, but also useful organization of an R Markdown Document is to organize it like a manuscript, with an abstract at the top, followed by intro, methods, results, and discussion. This is best if the person doing the analysis is the first author of the manuscript. 
+* Comments are used at each step to explain what the code is doing.  
+* To repeat an analysis across more than two variables, or more than two groups within a variable, purrr::map and the *apply* class of functions is used to iterate over a list. Code should not be copy and pasted more than once.  
+* Data sets are not overwritten. Changes to data sets are saved as a new data set.
+* When repeating the same argument multiple times (e.g. creating multiple variables within a mutate statement), have each repetition on its own line. Avoid long run-on chunks of code.  
+* Save tables in a "tables" folder and figures in a "figures" folder.  
+* Save key results (e.g. p-values) as an object and reference the object rather than the value when typing out results.  
+
+## Data Import and Cleaning  
+
+* data_cleaned: the following edits were made from the original dataset:  
+  + vehicles_yn: binary variable indicating if character ever drove a vehicle in any StarWars film  
+  + starships_yn: binary variable indicating if character ever drove a star ship in a Starwars film
+  + height was changed to numeric
+  + Films that the character appeared in were split from one long string to individual variables labeled film1:film7. If a character was only in 3 films, they will only be listed under film1:film3, and film4:film7 will be blank.  
+
+* data_long: data_cleaned was converted from wide to long, with one row per character per film. characters had multiple rows if they were in multiple films.  
+  +orig_tril: binary variable indicating if film was from original trilogy or a newer film
+
+* data_long_sub: subset data_long to only include a character once within original trilogy category and once within newer film category 
+
+* data_spp_mat: counted the number of each species for each film and converted into a matrix to create a heatmap. 
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+#Install and load CRAN packages uses pacman p_load. This will install any packages you do not already have installed, and then load everything. 
+pacman::p_load(tidyverse, gtsummary, broom, knitr, RColorBrewer, purrr, ggalt, ggfortify, kableExtra, plotly, reorder, giphyr, devtools)
+
+#Download other github packages needed (in this case, to insert a gif at the end of the document)
+devtools::install_github("haozhu233/giphyr")
+
+#Load starwars dataset
+data <- starwars
+
+#Create dataframe of film years
+film_years <- tibble(film = c("A New Hope", "The Empire Strikes Back", "Return of the Jedi", "The Phantom Menace", "Attack of the Clones", "Revenge of the Sith", "The Force Awakens"), release_year = c(1977,1980,1983,1999,2002,2005,2015))
+
+#Use dplyr to create a new cleaned dataset from the original dataset
+
+data_cleaned <- data %>%
+        #Create variables that determines if character drove any vehicle or starship
+  mutate(
+    #Create variables that determines if character drove any vehicle or starship
+    vehicles_yn = case_when(vehicles == "character(0)" ~ 0,
+                                 TRUE ~ 1),
+    starships_yn = case_when(starships == "character(0)" ~ 0,
+                                  TRUE ~ 1),
+    #Convert height to numeric variable
+    height = as.numeric(height)) %>%
+  #Separate the list of films into individual variables
+  separate(films, c("film1", "film2", "film3", "film4", "film5", "film6", "film7"), sep = ", \"") %>%
+  #Clean film variables to remove excess quotes and characters
+  mutate(
+    #Remove c(" in film 1
+    film1 = gsub("c\\(\"", "", film1),
+    #Remove quotes and parentheses at end of strings for all film variables 
+    across(film1:film7, ~gsub("\".*","",.)))
+
+#Create a long dataframe with film as one variable, with characters repeated for each film
+data_long <- data_cleaned %>%
+  pivot_longer(film1:film7, names_to = "film", values_to = "film_name") %>%
+  #Remove rows with NA in film name
+  filter(!is.na(film_name)) %>%
+  #Merge in release year
+  left_join(film_years, by = c("film_name" = "film")) %>%
+  #Create variable indicating if film is original trilogy or newer film
+  mutate(orig_tril = case_when(film_name %in% c("A New Hope", "The Empire Strikes Back", "Return of the Jedi") ~ "Original Trilogy",
+                               TRUE ~ "Newer Films"),
+         #Order film name as factor variable according to release year
+         film_name = as.factor(film_name),
+         film_name = fct_reorder(film_name, release_year, min))
+
+#Subset long dataset to only include a character once for original trilogy, and once for other films
+data_long_sub <- data_long %>%
+  distinct(across(name:species), orig_tril)
+ 
+#Count the number of each non-human species by film, pivot to a wide format to convert to a matrix for heatmap
+data_spp <- data_long %>%
+  select(species, film_name) %>%
+  #Remove human species
+  filter(species != "Human") %>%
+  #Count number of each species by film
+  group_by(film_name, species) %>%
+  summarize(n = n()) %>%
+  #Convert from wide to long
+  pivot_wider(names_from = species, values_from = n) %>%
+  #Make the film_name the row names so that dataframe is just counts
+  column_to_rownames(var="film_name") %>%
+  #Replace all NAs with zeros
+  replace(is.na(.),0)
+
+#Convert dataframe to a matrix
+data_spp_mat <- as.matrix(data_spp)
+```
+
+## Analysis 1: Do StarWars character demographics differ between the original trilogy (Episodes IV-VI) and the newer films (Episodes I-III and VII)?   
+
+Films were grouped into original trilogy (Episodes IV - VI) and newer films (Episodes I-III and Episode VII). Group differences in average character height, mass, birth year, sex, gender, and species between the original trilogy and newer films were determined by Fisher Exact tests for categorical variables and ANOVA or Wilcoxon Rank Sum Test for continuous variables. Wilcoxon Rank Sum tests were used if data appeared non-normal by plotting on a histogram and if a Shapiro test resulted in a p-value below 0.05. 
+
+### Tests for normality  
+
+
+```{r analysis 1 normality test, warning = F, message = F, out.height = "50%", out.width = "50%"}  
+
+#Create list of continuous variables
+cont_vars <- c("height", "mass", "birth_year")
+
+#Create colorblind-friendly trio of colors for plotting
+color_opts <- brewer.pal(3,"Dark2")
+
+#Create a histogram function taking arguments for the x aesthetic and fill color
+myhist <- function(var_names, col_vec){
+  #need to use !!dplyr::sym() around var_name vector so that quotations will be removed from cont_vars vector
+  plot <- ggplot(data_long_sub, aes(x = !!dplyr::sym(var_names))) +
+    geom_histogram(fill = col_vec) +
+    labs(title = var_names)
+  
+  print(plot)
+    }
+
+#Generate histograms
+hist_plots <- mapply(myhist, cont_vars, color_opts)
+
+#Run Shapiro test on continuous variables
+shapiros <- lapply(data[,cont_vars], shapiro.test)
+
+#Save p-values as data frame using purrr::map
+result <- as.data.frame(map(shapiros, ~ .x$p.value))
+row.names(result) = "p.value"
+
+#Print table
+kable(result, caption = "Shapiro Test p-value for continuous variables") %>%
+  kable_styling
+```
+All continuous variables are non-normally distributed. Wilcoxon-Rank Sum test were therefore used for height, weight, and birth year.  
+
+### Table 1
+
+```{r analysis 1 table 1, warning = F, message = F}
+
+#Create summary table of key demographics with p-values added
+#Because continuous variables are non-normal, do not need to specify test as Wilcoxon rank sum test is default for continuous variables
+table1 <- data_long_sub %>%
+  #Want all variables except name
+  select(height, mass, birth_year:gender, species, orig_tril) %>%
+  tbl_summary(by = orig_tril, label = list(
+    height ~ "Height (cm?)",
+    mass ~ "Weight (kg?)",
+    birth_year ~ "Birth Year",
+    sex ~ "Sex",
+    gender ~ "Gender",
+    species ~ "Species")) %>%
+  add_p() %>%
+  bold_p() %>%
+  modify_caption("**Table 1. StarWars Character Demographics**")
+
+#Save table
+table1 %>%
+  as_gt() %>%
+  gt::gtsave(       
+    filename = "tables/table1.png")
+
+#Create a vector of variables showing group differences whose p-values I want to reference in results
+dif_vars <- c("height", "birth_year", "sex", "gender")
+
+#Create a function that identifies the table row for the variable (function within a function) and returns the p-value from that row
+return_p <- function(y){
+  #Identify first row in table for variable of interest (this is the row with the p-value)
+  row_n <- (which(sapply(table1[[1]][[1]], function(x) y %in% x)))[[1]]
+  round(table1[[1]][[11]][[row_n]], digits = 2)
+}
+
+table1_pvals <- sapply(dif_vars, return_p)
+
+```
+
+Characters in the newer films tended to be taller (p = `r table1_pvals["height"][[1]]`) and older (p = `r table1_pvals["birth_year"][[1]]`) than characters in the original trilogy. There was also a higher proportion of females (p = `r table1_pvals["sex"][[1]]`) and feminine-presenting (p = `r table1_pvals["gender"][[1]]`) characters in the newer films. 
+
+
+## Analysis 2: Is gender associated with driving a vehicle in Star Wars films?
+
+A Fisher's Exact test was used to test the association between gender and driving a vehicle at any point during any Star Wars film. 
+
+```{r analysis 2, warning = F, message = F}
+
+#Create 2x2 table for gender x vehicle driving
+gender_vehicle_tbl <- table(data_cleaned$gender, data_cleaned$vehicles_yn)
+
+#Format table using kable function
+table2 <- kable(gender_vehicle_tbl, col.names = c("No Vehicle Driving", "Vehicle Driving"), caption = "Table 2: Number of characters who drove vehicle by gender", align = "lll") %>%
+  kable_styling()
+
+#Save table
+table2 %>%
+  save_kable("tables/table2.png")
+
+#Print table
+table2 
+
+#Calculate proportions by row
+gender_vehicle_proptbl <- prop.table(gender_vehicle_tbl, 1)
+#Calculate percentages by multiplying by 100
+gender_vehicle_perctbl <- gender_vehicle_proptbl*100
+
+#Save percentage of feminine and masculine characters that drive vehicles as objects
+fem_vehicle_perc <- round(gender_vehicle_perctbl[1,2], digits = 1)
+masc_vehicle_perc <- round(gender_vehicle_perctbl[2,2], digits = 1)
+
+#Run Fisher test to see if there is a statistical association
+fisher_res <- fisher.test(gender_vehicle_tbl)
+fisher_res
+
+#Save p-value 
+fisher_p <- fisher_res$p.value
+fisher_p <- round(fisher_p, digits = 2)
+```
+
+There was a slightly higher percentage of masculine-presenting characters that drove vehicles than feminine presenting characters (`r masc_vehicle_perc`% vs. `r fem_vehicle_perc`%, respectively), although the difference was not statistically significant (p = `r round(fisher_p, digits = 2)`). 
+
+## Analysis 3: Does species diversity differ by film?
+
+The total number of each species for each film was calculated and visualized in a interactive stacked bar chart. Films were ordered by year of release to look for temporal trends. The number of species for each film was converted into a matrix, and euclidian distance was calculated as part of the heatmap function to visualize similarity distances in species composition between films.    
+
+### Number of species by release year  
+
+
+```{r analysis 3 nom spp by year, warning = F, message = F}
+
+#Create stacked bar chart of number of characters per species in each film. 
+fig1 <- ggplot(data_long, aes(x = film_name, fill = species)) +
+  geom_bar(color = "black") +
+  theme_minimal() +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, vjust = 0.5), axis.title.x = element_blank()) +
+  labs(title = "Figure 1. Number of Species by Film")
+
+#Make the plot interactive so you can hover over and see what the species are. 
+ggplotly(fig1)
+
+#Save to figures folder
+ggsave("figures/fig1.png", fig1, width = 7, height = 5)
+```
+The total number of species is higher in later films, with the exception of the most recent film, The Force Awakens. Human is the most represented species in all films.
+
+### Comparison of composition of non-human species between films  
+
+
+```{r analysis 3, warning = F, message = F}
+png("figures/fig2.png", width = 800, height = 600)
+
+heatmap(data_spp_mat, margins = c(10,10))
+
+dev.off()
+
+heatmap(data_spp_mat, margins = c(10,10))
+```
+
+
+A New Hope, The Empire Strikes Back, and the Force Awakens are the closest in species composition of all 7 films, dominated primarily by Droids, but also all include Trandoshan. Return of the Jedi, Revenge of the Sith, and Attack of the Clones are slightly more diverse in character species, but each film has unique species composition with little overlap other than Droids. The Phantom Menace has the highest diversity and most unique species composition, with a number of Gungan and Zabrak characters, and relatively few Droids. 
+
+## Some Resources  
+
+* [R Markdown Cookbook](https://bookdown.org/yihui/rmarkdown-cookbook/): A comprehensive guide for creating reproducible reports in R Markdown 
+* [Introduction to dplyr](https://dplyr.tidyverse.org/articles/dplyr.html): Learn to clean datasets by filtering, creating new variables, reordering, renaming, and summarizing using dplyr. 
+* [Pivoting in dplyr](https://tidyr.tidyverse.org/articles/pivot.html): Convert data from wide to long format and vice versa using pivot functions in dplyr. Data often needs to be transformed into either wide or long format for certain types of visualization and analysis, and I find that I use these functions a lot. 
+* [Regular Expressions (regex) in R](http://uc-r.github.io/regex): Search for and edit character string patterns in a flexible way using regular expressions. 
+* [Creating Functions](https://www.w3schools.com/r/r_functions.asp): A simple walkthrough for creating functions and understanding function parameters  
+* [DataCamp Tutorial on Apply Functions](https://www.datacamp.com/tutorial/r-tutorial-apply-family): A free tutorial on using the apply class of functions and understanding the differences  
+* [Learn to Purrr](https://www.rebeccabarter.com/blog/2019-08-19_purrr/): An introduction to the purrr package, which is used for iterations within the tidyverse
+* [gtsummary Home Page](https://www.danieldsjoberg.com/gtsummary/): An overview of the gtsummary package. You can click on individual functions to learn more about creating summary tables and regression tables. 
+* [Colors in ggplot](http://www.cookbook-r.com/Graphs/Colors_(ggplot2)/): A tutorial of advanced color settings for ggplots. 
+
+## That's everything! Thanks for listening!!
+
+![tom+hanks](img/tom+hanks_xT9IgG50Fb7Mi0prBC.gif)
+
